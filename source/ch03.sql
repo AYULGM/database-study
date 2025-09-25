@@ -79,7 +79,7 @@ SELECT * FROM mapdonalds.burgers;
     
 SELECT *
 FROM burgers
-WHERE name = NULL; -- 이따구로 하면 아무것도 안나온다.
+-- WHERE name = NULL; -- 이따구로 하면 아무것도 안나온다.
 
 -- 이런 문제를 해결하기 위해 SQL은 'IS NULL' 이라는 특별한 키워드를 제공함
 -- IS NULL: 해당 열의 값이 NULL 인 행을 찾음
