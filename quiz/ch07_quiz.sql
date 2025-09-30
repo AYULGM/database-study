@@ -20,7 +20,7 @@
 -- ④ UNION ALL 연산자를 사용했을 때와 결과가 같다.
 
 -- 정답: 4번 (UNION ALL이 아니라 UNION)
--- 격과를 합치고 중복 레코드를 제거하는 UNION 연산자를 사용했을 때와 결과가 같음
+-- 결과를 합치고 중복 레코드를 제거하는 UNION 연산자를 사용했을 때와 결과가 같음
 
 -- 문제 3
 -- 다음 중 UNION 연산자를 사용할 때 주의할 점으로 바른 것은 무엇입니까?
@@ -204,8 +204,8 @@ LEFT JOIN borrow_records br ON b.id = br.book_id;
 SELECT ls.name, ls.role
 FROM library_staff ls
 JOIN members m ON ls.name = m.name;
--- 관계 설정 없이도 JOIN을 할 수 있다는 것을 보여줌
--- 일반적으로는 관계 있는 테이블끼리 JOIN 수행
+-- 관계 설정 없이도 JOIN을 할 수 있다는 것을 보여줌 (서로 키로 연결되어있지 않은데도 가능하다는걸 보여줌 , 컬럼의 자료형과 특정 열의 값이 같다면..)
+-- 일반적으로는 관계 있는 테이블끼리 JOIN 수행 (보통 PK, FK 로 연결되어있는것들....)
 
 
 -- 문제 6
