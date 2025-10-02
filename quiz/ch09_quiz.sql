@@ -4,9 +4,9 @@
 -- 서브쿼리에 대한 설명으로 옳은 것은 무엇입니까?
 
 -- ① 하나의 SQL 문에서 다른 SQL 문을 중첩하여 사용하는 것
--- ② 여러 테이블을 결합하여 하나의 결과를 반환하는 것
--- ③ 특정 조건을 기준으로 데이터를 필터링하는 명령
--- ④ 쿼리 실행 결과를 정렬하는 방식
+-- ② 여러 테이블을 결합하여 하나의 결과를 반환하는 것(JOIN, UNION)
+-- ③ 특정 조건을 기준으로 데이터를 필터링하는 명령(WHERE,HAVING)
+-- ④ 쿼리 실행 결과를 정렬하는 방식 (ORDER BY)
 
 -- 정답: 1번
 
@@ -26,7 +26,7 @@
 -- 서브쿼리와 JOIN의 차이에 대한 설명으로 옳은 것은 무엇입니까?
 
 -- ① 서브쿼리는 데이터를 결합하고, JOIN은 데이터를 필터링한다.
--- ② 서브쿼리는 독립적으로 실행되며, JOIN은 두 테이블 간의 관계를 결합한다.
+-- ② 서브쿼리는 독립적으로 실행되며, JOIN은 두 테이블 간의 관계를 결합한다.(맞는말이긴한데 관계없어도 붙일수있음, 근데 의미가 없는것 뿐이지)
 -- ③ JOIN은 두 테이블 간의 모든 데이터를 결합하고, 서브쿼리는 특정 데이터를 필터링한다.
 -- ④ JOIN은 임시 테이블을 생성하고, 서브쿼리는 모든 데이터를 반환한다.
 
@@ -49,6 +49,7 @@ WHERE id IN (
 -- ④ 대출 기록에서 조회된 도서 ID
 
 -- 정답: 3번
+-- 메인쿼리: 한 번이라도 도서를 대출한 회원들의 이름 목록
 
 
 -- 문제 5
@@ -168,16 +169,37 @@ INSERT INTO salary_records (id, salary_date, amount, employee_id) VALUES
 -- 각 직원의 이름과 참여 중인 프로젝트 수를 조회하세요.
 
 -- 정답:
+-- 나)
 SELECT e.name, COUNT(project_id) 
 FROM employees e
 JOIN employee_projects ep ON e.id = ep.employee_id
 GROUP BY employee_id, e.name;
 
+-- 쌤 상관서브쿼리)
+SELECT 
+	name,
+	(
+		SELECT COUNT(*)
+		FROM employee_projects ep
+		WHERE ep.employee_id = e.id -- 해당 직원의 참여 프로젝트 수만 세고 있음
+	) AS project_count
+FROM employees e;
 
--- 문제 2: WHERE 절에서의 서브쿼리
+-- 다른 방법: JOIN을 이용한 방법
+SELECT 
+  name,
+  COUNT(project_id) AS project_count
+FROM employees e
+LEFT JOIN employee_projects ep ON e.id = ep.employee_id
+GROUP BY e.id, e.name; -- 직원별로 그룹화(중복 이름이 있을 수도 있으니 id까지 그룹으로 묶어서)
+-- INNER JOIN을 쓰면 프로젝트에 참여한 직원만 나옴
+-- LEFT JOIN을 사용하는 이유는 프로젝트에 참여하지 않은 직원도 0건으로 표시하기 위해
+
+-- 문제 2: WHERE 절에서의 서브쿼리 (서브쿼리중에 제일 간단한 WHERE절 서브쿼리)
 -- 특정 부서(예: IT 부서)의 직원 이름을 조회하세요.
 
 -- 정답: 
+-- 나)
 SELECT employees.name
 FROM employees
 WHERE department_id IN (
@@ -186,15 +208,54 @@ WHERE department_id IN (
     WHERE name = 'IT'
 );
 
+-- 쌤)
+SELECT name
+FROM employees
+WHERE department_id = (
+	SELECT id
+	FROM departments
+	WHERE name = 'IT'
+);
+
+-- 다른 방법: JOIN을 이용한 방법
+SELECT e.name
+FROM employees e
+JOIN departments d ON e.department_id = d.id
+WHERE d.name = 'IT';
 
 -- 문제 3: FROM 절에서의 서브쿼리
 -- 부서별 직원 수를 조회하세요.
 
 -- 정답: 
+-- 나)
 SELECT d.name AS '부서', COUNT(department_id) AS '부서별 직원 수'
 FROM employees e
 JOIN departments d ON e.department_id = d.id
 GROUP BY e.department_id;
+
+-- 쌤)
+SELECT department_name, COUNT(*) AS employee_count
+FROM (
+  SELECT d.name AS department_name, e.id
+  FROM departments d
+  JOIN employees e ON d.id = e.department_id
+) AS sub -- 별칭 필수
+GROUP BY department_name;
+-- 추천 안함..(서브쿼리에서 부서로 그룹화하고 카운트 하면 끝날 일)
+
+-- 다른 방법: JOIN을 이용한 방법
+SELECT d.name AS 부서명, COUNT(*) AS 직원수
+FROM departments d
+JOIN employees e ON d.id = e.department_id -- 이렇게 하면 직원이 있는 부서만
+GROUP BY d.name; -- 부서로 그룹화
+
+SELECT d.name AS 부서명, COUNT(department_id) AS 직원수 -- 직원이 없는 부서는 0명으로 표시
+FROM departments d
+LEFT JOIN employees e ON d.id = e.department_id -- 이렇게 하면 직원이 없는 부서도
+GROUP BY d.name; -- 부서로 그룹화
+
+
+
 
 -- 문제 4: JOIN 절에서의 서브쿼리
 -- 가장 높은 급여를 받은 직원의 이름과 급여를 조회하세요.
@@ -207,19 +268,64 @@ GROUP BY e.name
 ORDER BY MAX(amount) DESC
 LIMIT 1;
 
+-- 쌤)
+SELECT name, salary
+FROM employees e
+JOIN (
+    SELECT MAX(salary) AS max_salary
+    FROM employees
+) AS max_sal ON e.salary = max_sal.max_salary;
+-- JOIN은 두 테이블 간 관계가 없어도 가능
+-- 조인의 핵심 원리는 '두 테이블의 특정 열(column)의 값이 같으면' 연결
+
+
+-- 다른 방법: WHERE 절에서 서브쿼리
+-- 해석에 따라 아래와 같이 2가지로 구분
+-- employees 기준: 현재 급여가 가장 높은 직원
+-- (추천)방식
+SELECT name, salary
+FROM employees
+WHERE salary = (
+	SELECT MAX(salary)
+	FROM employees
+);
+
+-- salary_records 기준: 급여 이력 중 최고 금액을 받은 직원
+SELECT DISTINCT name, amount
+FROM employees e
+JOIN salary_records sr ON sr.employee_id = e.id 
+WHERE amount = (
+	SELECT MAX(amount)
+	FROM salary_records
+);
+
+
 
 -- 문제 5: HAVING 절에서의 서브쿼리
 -- 부서별 평균 급여가 전체 평균 급여 이상인 부서명을 조회하세요.
 
 -- 정답:
+-- 나) '부서명'이 아니라 '부서 id'로 해버렸음
 SELECT department_id, AVG(amount)
 FROM salary_records sr
 JOIN employees e ON sr.employee_id = e.id
 GROUP BY department_id
-HAVING AVG(amount) > (
+HAVING AVG(amount) >= (
 	SELECT AVG(amount)
     FROM salary_records
 );
+
+-- 쌤)
+SELECT d.name AS 부서명, AVG(e.salary) AS '평균 급여'
+FROM departments d
+JOIN employees e ON e.department_id = d.id
+GROUP BY d.name -- 부서별
+HAVING AVG(e.salary) >= ( -- 부서별 평균 급여
+    -- 전체 평균 급여
+		SELECT AVG(salary) 
+		FROM employees
+);
+
 
 
 -- 문제 6: 복합 조건을 조합한 서브쿼리
@@ -233,6 +339,17 @@ FROM projects p
 JOIN employee_projects ep ON p.id = ep.project_id
 WHERE MAX(project_id);
 
+-- 쌤)
+SELECT name
+FROM projects
+WHERE id = (
+		-- 가장 많은 직원이 참여한 프로젝트 id
+    SELECT project_id
+    FROM employee_projects
+    GROUP BY project_id -- 프로젝트별
+    ORDER BY COUNT(*) DESC -- 참여 직원 수로 내림차순 정렬 후
+    LIMIT 1 -- 가장 참여자가 많은 프로젝트 하나를 선택
+);
 
 
 
